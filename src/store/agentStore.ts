@@ -33,6 +33,7 @@ interface AgentState {
 export const useAgentStore = create<AgentState>((set, get) => ({
     settings: null,
     scripts: [],
+    documentCount: 0,
     isLoading: true,
 
     fetchAgentData: async () => {
@@ -150,6 +151,32 @@ export const useAgentStore = create<AgentState>((set, get) => ({
 
         if (error) {
             console.error('Error deleting script:', error);
+        }
+    },
+
+    fetchDocumentCount: async () => {
+        const { count, error } = await supabase
+            .from('documents')
+            .select('*', { count: 'exact', head: true });
+
+        if (!error && count !== null) {
+            set({ documentCount: count });
+        } else if (error) {
+            console.error('Error fetching document count:', error);
+        }
+    },
+
+    clearAllDocuments: async () => {
+        // Warning: This deletes everything in the documents table
+        const { error } = await supabase
+            .from('documents')
+            .delete()
+            .neq('id', 0); // Hacky way to delete all rows avoiding no-filter restriction if any
+
+        if (!error) {
+            set({ documentCount: 0 });
+        } else {
+            console.error('Error clearing documents:', error);
         }
     }
 }));
